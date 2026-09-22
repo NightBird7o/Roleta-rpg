@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b14">
+<title>RPG — Roleta de Magias</title>
+<style>
+:root{--bg:#090b14;--card:#111525;--card2:#171c30;--text:#f4f5ff;--muted:#9ca4c7;--accent:#8b5cf6;--gold:#f5c451;--red:#ef4444}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#29214e 0,#090b14 45%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{text-align:center;padding:26px 16px 12px}h1{margin:0;font-size:27px}header p{margin:7px 0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:8px;padding:10px 14px;position:sticky;top:0;background:#090b14ee;backdrop-filter:blur(12px);z-index:5}
+.tab{flex:1;border:1px solid #2a3150;background:#12172a;color:#cbd0e8;padding:12px;border-radius:13px;font-weight:700}
+.tab.active{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border-color:#8b5cf6}
+.page{display:none;padding:12px 14px 34px;max-width:620px;margin:auto}.page.active{display:block}
+.card{background:linear-gradient(180deg,#151a2c,#101424);border:1px solid #282f4b;border-radius:22px;padding:18px;box-shadow:0 12px 35px #0005}
+.wheelWrap{position:relative;width:min(88vw,360px);aspect-ratio:1;margin:12px auto 18px}
+canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 8px #202642,0 18px 45px #0008}
+.pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid #fff;filter:drop-shadow(0 2px 3px #000)}
+button.spin{width:100%;padding:16px;border:0;border-radius:15px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:17px;font-weight:900}
+button.spin:disabled{opacity:.5}
+.result{margin-top:15px;text-align:center;min-height:80px;padding:12px;border-radius:16px;background:#0b0e1b;border:1px solid #2a3150}
+.result .name{font-size:27px;font-weight:900}.result .rank{font-size:13px;color:var(--gold);margin-top:4px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px;font-size:12px;color:#cbd0e8}.legend div{padding:8px;border-radius:10px;background:#0c1020}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:13px}
+.bigNumber{text-align:center;font-size:85px;font-weight:1000;line-height:1;margin:24px 0 10px;text-shadow:0 8px 30px #000}
+.birthTitle{text-align:center;font-size:22px;font-weight:900}.birthSub{text-align:center;color:var(--muted);font-size:13px}
+.prob{display:grid;gap:8px;margin:20px 0}.probRow{display:flex;justify-content:space-between;background:#0b0e1b;border:1px solid #252c47;padding:12px;border-radius:12px}.warn{color:#fca5a5}
+footer{text-align:center;color:#6f789a;font-size:11px;padding:5px 0 25px}
+</style>
+</head>
+<body>
+<header><h1>⚔️ Grimório das 100 Magias</h1><p>Roletas para determinar o nascimento mágico do seu RPG</p></header>
+<nav class="tabs">
+<button class="tab active" onclick="showPage('magic',this)">🔮 Magia</button>
+<button class="tab" onclick="showPage('birth',this)">🧬 Nascimento</button>
+</nav>
+
+<section id="magic" class="page active">
+<div class="card">
+<div class="wheelWrap"><canvas id="wheel" width="900" height="900"></canvas><div class="pointer"></div></div>
+<button class="spin" id="spinBtn" onclick="spinMagic()">GIRAR A ROLETA</button>
+<div class="result" id="magicResult">Gire para descobrir a magia.</div>
+<div class="legend">
+<div><span class="dot" style="background:#64748b"></span>Comum — 60%</div>
+<div><span class="dot" style="background:#3b82f6"></span>Raro — 25%</div>
+<div><span class="dot" style="background:#a855f7"></span>Épico — 14%</div>
+<div><span class="dot" style="background:#f59e0b"></span>Lendário — 0,99%</div>
+<div><span class="dot" style="background:#ef4444"></span>Mítico — 0,01%</div>
+</div>
+<p class="note">As chances são por <b>rank</b>. Dentro de cada rank, todas as magias têm a mesma chance. Assim, as duas Lendárias dividem igualmente os 0,99%, e Nexum possui sozinho os 0,01% Mítico.</p>
+</div>
+</section>
+
+<section id="birth" class="page">
+<div class="card">
+<div class="birthTitle">Quantas magias a pessoa nasce tendo?</div>
+<div class="birthSub">Role para determinar a quantidade inicial de afinidades.</div>
+<div class="bigNumber" id="birthNumber">?</div>
+<button class="spin" id="birthBtn" onclick="spinBirth()">DETERMINAR NASCIMENTO</button>
+<div class="result" id="birthResult">O destino ainda não foi decidido.</div>
+<div class="prob">
+<div class="probRow"><span>1 magia</span><b>90%</b></div>
+<div class="probRow"><span>2 magias</span><b>9,99%</b></div>
+<div class="probRow"><span class="warn">3 magias — caso de século</span><b class="warn">0,01%</b></div>
+</div>
+<p class="note">O resultado 3 foi configurado como um evento extremamente raro: 1 em 10.000 nascimentos. No lore, você pode tratar isso como o nascimento excepcional que aparece aproximadamente uma vez por século.</p>
+</div>
+</section>
+<footer>RPG — sistema de roletas • 100 elementos • 2 Lendários • 1 Mítico</footer>
+
+<script>
+const elements = [["Fogo", "Comum"], ["Água", "Comum"], ["Terra", "Comum"], ["Ar", "Comum"], ["Gelo", "Comum"], ["Madeira", "Comum"], ["Pedra", "Comum"], ["Areia", "Comum"], ["Metal", "Comum"], ["Luz", "Comum"], ["Trevas", "Comum"], ["Vapor", "Comum"], ["Fumaça", "Comum"], ["Névoa", "Comum"], ["Barro", "Comum"], ["Cristal", "Comum"], ["Lava", "Comum"], ["Cinzas", "Comum"], ["Veneno", "Comum"], ["Ácido", "Comum"], ["Som", "Comum"], ["Eletricidade", "Comum"], ["Pólvora", "Comum"], ["Espinhos", "Comum"], ["Musgo", "Comum"], ["Planta", "Comum"], ["Coral", "Comum"], ["Resina", "Comum"], ["Cera", "Comum"], ["Óleo", "Comum"], ["Ferro", "Comum"], ["Cobre", "Comum"], ["Prata", "Comum"], ["Ouro", "Comum"], ["Mercúrio", "Comum"], ["Obsidiana", "Comum"], ["Âmbar", "Comum"], ["Safira", "Comum"], ["Rubi", "Comum"], ["Esmeralda", "Comum"], ["Sangue", "Raro"], ["Ossos", "Raro"], ["Carne", "Raro"], ["Sangue Vital", "Raro"], ["Relâmpago", "Raro"], ["Magnetismo", "Raro"], ["Gravidade", "Raro"], ["Pressão", "Raro"], ["Sombravento", "Raro"], ["Plasma", "Raro"], ["Vapor Congelante", "Raro"], ["Cristal Lunar", "Raro"], ["Cristal Solar", "Raro"], ["Tinta", "Raro"], ["Seda", "Raro"], ["Espelho", "Raro"], ["Névoa Mental", "Raro"], ["Ferrugem", "Raro"], ["Alcatrão", "Raro"], ["Pólen", "Raro"], ["Seiva", "Raro"], ["Cogumelo", "Raro"], ["Esporo", "Raro"], ["Veneno Sombrio", "Raro"], ["Fogo Azul", "Raro"], ["Gelo Negro", "Raro"], ["Raio Solar", "Raro"], ["Rocha Vulcânica", "Raro"], ["Cristal Sonoro", "Raro"], ["Ferro Vivo", "Raro"], ["Alma", "Épico"], ["Espírito", "Épico"], ["Vida", "Épico"], ["Morte", "Épico"], ["Sonho", "Épico"], ["Ilusão", "Épico"], ["Memória", "Épico"], ["Medo", "Épico"], ["Desejo", "Épico"], ["Esperança", "Épico"], ["Caos", "Épico"], ["Ordem", "Épico"], ["Tempo", "Épico"], ["Espaço", "Épico"], ["Vácuo", "Épico"], ["Dimensão", "Épico"], ["Destino", "Épico"], ["Fortuna", "Épico"], ["Criação", "Épico"], ["Destruição", "Épico"], ["Renascimento", "Épico"], ["Decadência", "Épico"], ["Eclipse", "Épico"], ["Estelar", "Épico"], ["Abismo", "Épico"], ["Divino", "Épico"], ["Primordial", "Épico"], ["Aether", "Lendário"], ["Entropia", "Lendário"], ["Nexum", "Mítico"]];
+const rankWeights={Comum:60,Raro:25,"Épico":14,"Lendário":0.99,"Mítico":0.01};
+const rankColor={Comum:"#64748b",Raro:"#3b82f6","Épico":"#a855f7","Lendário":"#f59e0b","Mítico":"#ef4444"};
+const segments=[];
+for(const [name,rank] of elements){
+  const w=rankWeights[rank]/elements.filter(e=>e[1]===rank).length;
+  segments.push({name,rank,w});
+}
+const canvas=document.getElementById("wheel"),ctx=canvas.getContext("2d");
+let rotation=0, spinning=false;
+function drawWheel(){
+  const cx=450,cy=450,r=420,total=segments.reduce((a,s)=>a+s.w,0);
+  let a=rotation;
+  ctx.clearRect(0,0,900,900);
+  for(const s of segments){
+    const da=s.w/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a,a+da);ctx.closePath();
+    ctx.fillStyle=rankColor[s.rank];ctx.fill();ctx.strokeStyle="#0b0e1b";ctx.lineWidth=2;ctx.stroke();
+    if(da>.025){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(a+da/2);
+      ctx.textAlign="right";ctx.fillStyle="#fff";ctx.font="bold 17px system-ui";
+      ctx.shadowColor="#000";ctx.shadowBlur=4;
+      ctx.fillText(s.name,r-16,6);ctx.restore();
+    }
+    a+=da;
+  }
+  ctx.beginPath();ctx.arc(cx,cy,65,0,Math.PI*2);ctx.fillStyle="#090b14";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.stroke();
+  ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="bold 25px system-ui";ctx.fillText("MAGIA",cx,8);
+}
+function pickWeighted(){
+ let x=Math.random()*100;
+ for(const s of segments){x-=s.w;if(x<0)return s}
+ return segments[segments.length-1];
+}
+function spinMagic(){
+ if(spinning)return; spinning=true;document.getElementById("spinBtn").disabled=true;
+ const chosen=pickWeighted();
+ const idx=segments.indexOf(chosen), total=segments.reduce((a,s)=>a+s.w,0);
+ let start=0;for(let i=0;i<idx;i++)start+=segments[i].w;
+ const mid=start+chosen.w/2, targetAngle=(mid/total)*Math.PI*2;
+ const current=((rotation%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+ let delta=(Math.PI*2*8)+((Math.PI*1.5)-targetAngle-current+Math.PI*2)%(Math.PI*2);
+ const from=rotation,to=rotation+delta,dur=4200,t0=performance.now();
+ function anim(t){
+   let p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);rotation=from+(to-from)*e;drawWheel();
+   if(p<1)requestAnimationFrame(anim);else{
+     spinning=false;document.getElementById("spinBtn").disabled=false;
+     document.getElementById("magicResult").innerHTML=`<div class="name">${chosen.name}</div><div class="rank">${chosen.rank}</div>`;
+   }
+ } requestAnimationFrame(anim);
+}
+function spinBirth(){
+ const btn=document.getElementById("birthBtn");btn.disabled=true;
+ const x=Math.random()*100;
+ const n=x<90?1:(x<99.99?2:3);
+ document.getElementById("birthNumber").textContent=n;
+ const msg=n===3?"🌌 UM NASCIMENTO DE SÉCULO!":"Nascimento mágico definido.";
+ document.getElementById("birthResult").innerHTML=`<div class="name">${n} ${n===1?"magia":"magias"}</div><div class="rank">${msg}</div>`;
+ setTimeout(()=>btn.disabled=false,500);
+}
+function showPage(id,el){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+ document.getElementById(id).classList.add("active");el.classList.add("active");
+}
+drawWheel();
+</script>
+</body></html>
